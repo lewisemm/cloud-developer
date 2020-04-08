@@ -27,7 +27,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     }
   }
 
-  var params = {
+  const params = {
     TableName:todoTable,
     Key: {
       todoId
@@ -44,12 +44,12 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     ReturnValues:"NONE"
   };
 
-  logger.info(`Updating todo item of todoId: ${todoId}.`)
+  logger.info(`Attempting to update todo item of todoId: ${todoId}.`)
 
   const updatedItem = await docClient.update(params).promise()
 
   return {
-    statusCode: 200,
+    statusCode: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Credentials': true
