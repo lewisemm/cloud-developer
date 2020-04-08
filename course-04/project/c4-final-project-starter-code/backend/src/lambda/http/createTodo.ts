@@ -3,8 +3,10 @@ import 'source-map-support/register'
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda'
 import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
-import { createLogger } from '../../utils/logger'
+import { decode } from 'jsonwebtoken'
+import { Jwt } from '../../auth/Jwt'
 
+import { createLogger } from '../../utils/logger'
 import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
 
 const docClient = new AWS.DynamoDB.DocumentClient()
@@ -15,6 +17,12 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   // TODO: Implement creating a new TODO item
   logger.info('Data received: ', event.body)
 
+  logger.info('In search of the authorization token', event.headers)
+
+  const authToken = getToken(event.headers.Authorization)
+
+  const jwt: Jwt = decode(authToken, { complete: true }) as Jwt
+
   const todoId = uuid.v4()
   const createdAt = new Date().toISOString()
 
@@ -23,7 +31,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   // const split = authorization.split(' ')
   // const jwtToken = split[1]
   // const userId = getUserId(jwtToken)
-  const userId = 'abcde'
+  const userId = jwt.payload.sub
 
   const newTodo: CreateTodoRequest = JSON.parse(event.body)
 
@@ -51,4 +59,16 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     })
   }
 
+}
+
+function getToken(authHeader: string): string {
+  if (!authHeader) throw new Error('No authentication header')
+
+  if (!authHeader.toLowerCase().startsWith('bearer '))
+    throw new Error('Invalid authentication header')
+
+  const split = authHeader.split(' ')
+  const token = split[1]
+
+  return token
 }
