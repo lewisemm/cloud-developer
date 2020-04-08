@@ -5,6 +5,8 @@ import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
 import { decode } from 'jsonwebtoken'
 import { Jwt } from '../../auth/Jwt'
+import * as middy from 'middy'
+import { cors } from 'middy/middlewares'
 
 import { createLogger } from '../../utils/logger'
 import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
@@ -13,7 +15,7 @@ const docClient = new AWS.DynamoDB.DocumentClient()
 const todoTable = process.env.TODO_TABLE
 const logger = createLogger('createTodos')
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   // TODO: Implement creating a new TODO item
   logger.info('Data received: ', event.body)
 
@@ -50,16 +52,18 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   return {
     statusCode: 201,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true
-    },
     body: JSON.stringify({
       newItem
     })
   }
 
-}
+})
+
+handler.use(
+  cors({
+    credentials: true
+  })
+)
 
 function getToken(authHeader: string): string {
   if (!authHeader) throw new Error('No authentication header')
