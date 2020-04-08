@@ -11,7 +11,7 @@ const logger = createLogger('deleteTodos')
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
 
-  const validTodo = todoExists(todoId)
+  const validTodo = await todoExists(todoId)
 
   if (!validTodo) {
     return {

@@ -16,7 +16,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   logger.info(`Update information is`, updatedTodo)
 
   // TODO: Update a TODO item with the provided id using values in the "updatedTodo" object
-  const validTodo = todoExists(todoId)
+  const validTodo = await todoExists(todoId)
 
   if (!validTodo) {
     return {
