@@ -1,7 +1,8 @@
 import 'source-map-support/register'
-
-import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as AWS  from 'aws-sdk'
+import * as middy from 'middy'
+import { cors } from 'middy/middlewares'
 import { createLogger } from '../../utils/logger'
 
 const s3 = new AWS.S3({
@@ -14,7 +15,7 @@ const bucketName = process.env.ATTACHMENTS_S3_BUCKET
 
 const logger = createLogger('generateUploadUrl')
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
   const validTodo = await todoExists(todoId)
 
@@ -29,6 +30,26 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   }
 
   const uploadUrl = getUploadUrl(todoId)
+  const attachmentUrl = `https://${bucketName}.s3.amazonaws.com/${todoId}`
+
+  const params = {
+    TableName:todoTable,
+    Key: {
+      todoId
+    },
+    UpdateExpression: "set attachmentUrl = :attachmentUrl",
+    ExpressionAttributeValues: {
+      ":attachmentUrl": attachmentUrl
+    },
+    ReturnValues:"NONE"
+  };
+
+  logger.info('Attempting to update the attachmentUrl of item', validTodo)
+
+  const updatedItem = await docClient.update(params).promise()
+
+  logger.info('attachmentUrl updated', updatedItem)
+  
 
   // TODO: Return a presigned URL to upload a file for a TODO item with the provided id
   return {
@@ -38,7 +59,13 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     })
   }
 
-}
+})
+
+handler.use(
+  cors({
+    credentials: true
+  })
+)
 
 function getUploadUrl(todoId: string) {
   return s3.getSignedUrl('putObject', {
