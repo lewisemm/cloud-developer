@@ -1,12 +1,14 @@
 import * as AWS from 'aws-sdk'
+import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
-
 
 import { TodoItem } from '../models/TodoItem'
 
+const XAWS = AWSXRay.captureAWS(AWS)
+
 export class TodoAccess {
   constructor(
-    private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient(),
+    private readonly docClient: DocumentClient = new XAWS.DynamoDB.DocumentClient(),
     private readonly todoTable: string = process.env.TODO_TABLE,
     private readonly userIndex: string = process.env.USER_INDEX,
     private readonly urlExpiration = process.env.SIGNED_URL_EXPIRATION,
@@ -85,7 +87,7 @@ export class TodoAccess {
   }
 
   async getTodoUploadUrl(todoId: string): Promise<string> {
-    const s3 = new AWS.S3({
+    const s3 = new XAWS.S3({
       signatureVersion: 'v4'
     })
     return s3.getSignedUrl('putObject', {
