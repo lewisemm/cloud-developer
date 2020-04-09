@@ -28,7 +28,6 @@ export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGat
   const todoId = uuid.v4()
   const createdAt = new Date().toISOString()
 
-  // TODO: iMPLEMENT THIS ONCE AUTH IS FIGURED OUT
   // const authorization = event.headers.Authorization
   // const split = authorization.split(' ')
   // const jwtToken = split[1]
@@ -53,7 +52,7 @@ export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGat
   return {
     statusCode: 201,
     body: JSON.stringify({
-      newItem
+      item: newItem
     })
   }
 

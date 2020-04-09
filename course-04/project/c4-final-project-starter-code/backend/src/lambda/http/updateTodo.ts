@@ -1,7 +1,9 @@
 import 'source-map-support/register'
 
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda'
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as AWS  from 'aws-sdk'
+import * as middy from 'middy'
+import { cors } from 'middy/middlewares'
 
 import { createLogger } from '../../utils/logger'
 import { UpdateTodoRequest } from '../../requests/UpdateTodoRequest'
@@ -10,7 +12,7 @@ const docClient = new AWS.DynamoDB.DocumentClient()
 const todoTable = process.env.TODO_TABLE
 const logger = createLogger('updateTodos')
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
   const updatedTodo: UpdateTodoRequest = JSON.parse(event.body)
   logger.info(`Update information is`, updatedTodo)
@@ -50,17 +52,19 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   return {
     statusCode: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true
-    },
     body: JSON.stringify({
       updatedItem
     })
   }
-}
+})
 
 async function todoExists(todoId: string) {
+handler.use(
+  cors({
+    credentials: true
+  })
+)
+
   const result = await docClient
     .get({
       TableName: todoTable,

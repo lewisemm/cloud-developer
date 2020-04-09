@@ -1,14 +1,16 @@
 import 'source-map-support/register'
 
-import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
 import * as AWS  from 'aws-sdk'
+import * as middy from 'middy'
+import { cors } from 'middy/middlewares'
+
 import { createLogger } from '../../utils/logger'
 
 const docClient = new AWS.DynamoDB.DocumentClient()
 const todoTable = process.env.TODO_TABLE
 const logger = createLogger('deleteTodos')
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
 
   const validTodo = await todoExists(todoId)
@@ -45,8 +47,13 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       deletedResult
     })
   }
-}
+})
 
+handler.use(
+  cors({
+    credentials: true
+  })
+)
 
 async function todoExists(todoId: string) {
   const result = await docClient
