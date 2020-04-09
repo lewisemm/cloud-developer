@@ -4,6 +4,8 @@ service:
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
+  - serverless-offline
+  - serverless-dynamodb-local
 
 provider:
   name: aws
@@ -15,6 +17,18 @@ provider:
     TODO_TABLE: Todo-${self:provider.stage}
     ATTACHMENTS_S3_BUCKET: attachments-icxpp-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
+
+custom:
+  serverless-offline:
+    httpPort: 4000
+
+  dynamodb:
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+    stages: # Add this section of the config
+      - dev
 
 functions:
 
