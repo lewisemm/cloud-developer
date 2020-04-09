@@ -1,6 +1,9 @@
 import 'source-map-support/register'
 
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as AWS  from 'aws-sdk'
+import { decode } from 'jsonwebtoken'
+import { Jwt } from '../../auth/Jwt'
 import * as middy from 'middy'
 import { cors } from 'middy/middlewares'
 
@@ -12,8 +15,11 @@ const logger = createLogger('deleteTodos')
 
 export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
+  const authToken = getToken(event.headers.Authorization)
+  const jwt: Jwt = decode(authToken, { complete: true }) as Jwt
+  const userId = jwt.payload.sub
 
-  const validTodo = await todoExists(todoId)
+  const validTodo = await todoExists(todoId, userId)
 
   if (!validTodo) {
     return {
@@ -28,6 +34,7 @@ export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGat
   const params = {
     TableName:todoTable,
     Key: {
+      userId,
       todoId
     },
     ReturnValues:"NONE"
@@ -39,10 +46,6 @@ export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGat
 
   return {
     statusCode: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true
-    },
     body: JSON.stringify({
       deletedResult
     })
@@ -55,11 +58,12 @@ handler.use(
   })
 )
 
-async function todoExists(todoId: string) {
+async function todoExists(todoId: string, userId: string) {
   const result = await docClient
     .get({
       TableName: todoTable,
       Key: {
+        userId,
         todoId
       }
     })
@@ -67,4 +71,16 @@ async function todoExists(todoId: string) {
 
   logger.info('Get todo: ', result)
   return !!result.Item
+}
+
+function getToken(authHeader: string): string {
+  if (!authHeader) throw new Error('No authentication header')
+
+  if (!authHeader.toLowerCase().startsWith('bearer '))
+    throw new Error('Invalid authentication header')
+
+  const split = authHeader.split(' ')
+  const token = split[1]
+
+  return token
 }

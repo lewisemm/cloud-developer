@@ -2,6 +2,8 @@ import 'source-map-support/register'
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as AWS  from 'aws-sdk'
+import { decode } from 'jsonwebtoken'
+import { Jwt } from '../../auth/Jwt'
 import * as middy from 'middy'
 import { cors } from 'middy/middlewares'
 
@@ -17,8 +19,12 @@ export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGat
   const updatedTodo: UpdateTodoRequest = JSON.parse(event.body)
   logger.info(`Update information is`, updatedTodo)
 
+  const authToken = getToken(event.headers.Authorization)
+  const jwt: Jwt = decode(authToken, { complete: true }) as Jwt
+  const userId = jwt.payload.sub
+
   // TODO: Update a TODO item with the provided id using values in the "updatedTodo" object
-  const validTodo = await todoExists(todoId)
+  const validTodo = await todoExists(todoId, userId)
 
   if (!validTodo) {
     return {
@@ -32,6 +38,7 @@ export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGat
   const params = {
     TableName:todoTable,
     Key: {
+      userId,
       todoId
     },
     UpdateExpression: "set #title = :title, dueDate = :dueDate, done = :done",
@@ -58,17 +65,18 @@ export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGat
   }
 })
 
-async function todoExists(todoId: string) {
 handler.use(
   cors({
     credentials: true
   })
 )
 
+async function todoExists(todoId: string, userId: string) {
   const result = await docClient
     .get({
       TableName: todoTable,
       Key: {
+        userId,
         todoId
       }
     })
@@ -76,4 +84,16 @@ handler.use(
 
   logger.info('Get todo: ', result)
   return !!result.Item
+}
+
+function getToken(authHeader: string): string {
+  if (!authHeader) throw new Error('No authentication header')
+
+  if (!authHeader.toLowerCase().startsWith('bearer '))
+    throw new Error('Invalid authentication header')
+
+  const split = authHeader.split(' ')
+  const token = split[1]
+
+  return token
 }
