@@ -6,6 +6,8 @@ plugins:
   - serverless-iam-roles-per-function
   - serverless-offline
   - serverless-dynamodb-local
+  - serverless-aws-documentation
+  - serverless-reqvalidator-plugin
 
 provider:
   tracing:
@@ -33,6 +35,17 @@ custom:
       migrate: true
     stages: # Add this section of the config
       - dev
+
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: Serverless Todo Application
+        description: Serverless Todo Application
+    models:
+      - name: CreateTodoRequest
+        contentType: application/json
+        schema: ${file(models/create-todo-request.json)}
 
 functions:
 
@@ -72,6 +85,12 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create todo items
+            description: Create todo items
+            requestModels:
+              'application/json': CreateTodoRequest
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -169,6 +188,15 @@ functions:
 resources:
   Resources:
     # TODO: Add any necessary AWS resources
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
+
     GatewayResponseDefault4XX:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
