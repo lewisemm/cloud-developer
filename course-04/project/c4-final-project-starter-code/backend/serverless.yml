@@ -75,6 +75,16 @@ functions:
         Action:
           - logs:PutLogEvents
         Resource: arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/serverless-todo-app-dev-GetTodos:*:*
+      - Effect: Allow
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}/index/${self:provider.environment.USER_INDEX}
 
 
   CreateTodo:
@@ -105,6 +115,12 @@ functions:
         Action:
           - logs:PutLogEvents
         Resource: arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/serverless-todo-app-dev-CreateTodo:*:*
+      - Effect: Allow
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   UpdateTodo:
@@ -130,6 +146,12 @@ functions:
         Action:
           - logs:PutLogEvents
         Resource: arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/serverless-todo-app-dev-UpdateTodo:*:*
+      - Effect: Allow
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   DeleteTodo:
@@ -155,6 +177,12 @@ functions:
         Action:
           - logs:PutLogEvents
         Resource: arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/serverless-todo-app-dev-DeleteTodo:*:*
+      - Effect: Allow
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   GenerateUploadUrl:
@@ -184,6 +212,12 @@ functions:
           - dynamodb:GetItem
           - dynamodb:UpdateItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
+      - Effect: Allow
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
 
 resources:
   Resources:
